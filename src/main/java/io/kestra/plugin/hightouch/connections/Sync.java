@@ -27,7 +27,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import static io.kestra.core.utils.Rethrow.throwSupplier;
 
@@ -60,7 +59,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         title = "The sync id to trigger run"
     )
     @PluginProperty(dynamic = true)
-    private String syncId;
+    private Integer syncId;
 
     @Schema(
             title = "Full Resynchronization"
@@ -99,12 +98,9 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 .create(
                     HttpMethod.POST,
                     UriTemplate
-                        .of("/api/v1/syncs/trigger/")
-                        .toString()
-                )
-                .body(Map.of(
-                        "syncId", runContext.render(this.syncId),
-                        "fullResync", this.fullResynchronization)),
+                        .of("/api/v1/syncs/{syncId}/trigger/")
+                        .expand(Map.of("syncId", runContext.render(this.syncId.toString())))
+                ),
             Argument.of(Run.class)
         );
 
@@ -130,7 +126,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                             UriTemplate
                                 .of("/api/v1/syncs/{syncId}/?runId={runId}")
                                 .expand(Map.of(
-                                        "syncId", runContext.render(this.syncId),
+                                        "syncId", runContext.render(this.syncId.toString()),
                                         "runId", runId
                                 ))
                         ),
