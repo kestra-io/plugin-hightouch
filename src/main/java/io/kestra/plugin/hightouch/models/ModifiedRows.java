@@ -8,7 +8,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @SuperBuilder
 public class ModifiedRows {
-    String addedCount;
-    String changedCount;
-    String removedCount;
+    Long addedCount;
+    Long changedCount;
+    Long removedCount;
 }

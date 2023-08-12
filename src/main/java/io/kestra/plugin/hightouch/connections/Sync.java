@@ -181,7 +181,8 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
 
         // metrics
         // runContext.metric(Counter.of("attempts.count", finalJobStatus.getAttempts().size()));
-        //runContext.metric(Counter.of("rows.added", finalJobStatus.getPlannedRows().getAddedCount()));
+        runContext.metric(Counter.of("rows.successfullyAdded", finalJobStatus.getSuccessfulRows().getAddedCount()));
+        runContext.metric(Counter.of("rows.successfullyRemoved", finalJobStatus.getSuccessfulRows().getRemovedCount()));
 
         return Output.builder()
             .runId(runId)
