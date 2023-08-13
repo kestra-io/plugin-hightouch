@@ -1,6 +1,6 @@
 @PluginSubGroup(
-    description = "This sub-group of plugins contains tasks for using Airbyte.\n" +
-    "Airbyte is an open-source data integration engine that helps you consolidate your data in your data warehouses, lakes and databases.",
+    description = "This sub-group of plugins contains tasks for using Hightouch.\n" +
+    "Hightouch is a reverse ETL product which allows you to easily activate your data.",
     categories = PluginSubGroup.PluginCategory.TOOL
 )
 package io.kestra.plugin.hightouch.connections;
