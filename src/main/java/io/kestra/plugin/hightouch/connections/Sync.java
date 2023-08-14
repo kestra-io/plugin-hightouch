@@ -98,8 +98,10 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 .create(
                     HttpMethod.POST,
                     UriTemplate
-                        .of("/api/v1/syncs/{syncId}/trigger/")
-                        .expand(Map.of("syncId", runContext.render(this.syncId.toString())))
+                        .of("/api/v1/syncs/{syncId}/trigger")
+                        .expand(Map.of(
+                                "syncId", runContext.render(this.syncId.toString())
+                        ))
                 ),
             Argument.of(Run.class)
         );
@@ -122,7 +124,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                     runContext,
                     HttpRequest
                         .create(
-                            HttpMethod.POST,
+                            HttpMethod.GET,
                             UriTemplate
                                 .of("/api/v1/syncs/{syncId}/?runId={runId}")
                                 .expand(Map.of(
