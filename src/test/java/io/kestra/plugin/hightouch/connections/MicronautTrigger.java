@@ -28,11 +28,10 @@ public class MicronautTrigger {
             DefaultHttpClient httpClient = (DefaultHttpClient) FACTORY.createClient(URI.create("https://api.hightouch.com").toURL(), new DefaultHttpClientConfiguration());
 
             HttpRequest<String> request = HttpRequest
-                    .POST(url, "{}")
+                    .POST(url, requestBody)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .header(HttpHeaders.ACCEPT, MediaType.ALL)
-                    .bearerAuth("WRONG_TOKEN")
-                    .body(requestBody);
+                    .bearerAuth("WRONG_TOKEN");
 
             String response = httpClient.toBlocking().retrieve(request);
 
