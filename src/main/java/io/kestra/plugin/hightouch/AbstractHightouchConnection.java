@@ -45,7 +45,7 @@ public abstract class AbstractHightouchConnection extends Task {
     protected HttpClient client(RunContext runContext) throws IllegalVariableEvaluationException, MalformedURLException, URISyntaxException {
         MediaTypeCodecRegistry mediaTypeCodecRegistry = runContext.getApplicationContext().getBean(MediaTypeCodecRegistry.class);
 
-        DefaultHttpClient client = (DefaultHttpClient) FACTORY.createClient(URI.create("https://api.hightouch.com/").toURL(), new DefaultHttpClientConfiguration());
+        DefaultHttpClient client = (DefaultHttpClient) FACTORY.createClient(URI.create("https://api.hightouch.com").toURL(), new DefaultHttpClientConfiguration());
         client.setMediaTypeCodecRegistry(mediaTypeCodecRegistry);
 
         return client;
@@ -54,13 +54,14 @@ public abstract class AbstractHightouchConnection extends Task {
     protected <REQ, RES> HttpResponse<RES> request(RunContext runContext, MutableHttpRequest<REQ> request, Argument<RES> argument) throws HttpClientResponseException {
         try {
             request = request
-                .contentType(MediaType.APPLICATION_JSON)
-                    .bearerAuth(runContext.render(this.token));
+                .bearerAuth(runContext.render(this.token))
+                .contentType(MediaType.APPLICATION_JSON);
 
             try (HttpClient client = this.client(runContext)) {
                 return client.toBlocking().exchange(request, argument);
             }
         } catch (HttpClientResponseException e) {
+            System.out.println("Request failed '" + e.getStatus().getCode() + "' and body '" + e.getResponse().getBody(String.class).orElse("null") + "'");
             throw new HttpClientResponseException(
                 "Request failed '" + e.getStatus().getCode() + "' and body '" + e.getResponse().getBody(String.class).orElse("null") + "'",
                 e,
