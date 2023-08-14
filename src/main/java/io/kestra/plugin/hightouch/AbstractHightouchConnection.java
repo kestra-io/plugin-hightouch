@@ -1,5 +1,7 @@
 package io.kestra.plugin.hightouch;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.tasks.Task;
 
@@ -42,7 +44,9 @@ public abstract class AbstractHightouchConnection extends Task {
 
         HttpClient httpClient = HttpClient.newBuilder().build();
         String baseUrl = "https://api.hightouch.com";
-        ObjectMapper objectMapper = new ObjectMapper(); // Jackson ObjectMapper for JSON parsing
+        ObjectMapper objectMapper = new ObjectMapper() // Jackson ObjectMapper for JSON parsing
+                .enable(DeserializationFeature.UNWRAP_SINGLE_VALUE_ARRAYS)
+                .registerModule(new JavaTimeModule());
 
         try {
             URI fullPath = URI.create(baseUrl).resolve(path);

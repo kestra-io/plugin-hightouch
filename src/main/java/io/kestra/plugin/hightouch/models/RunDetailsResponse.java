@@ -10,6 +10,6 @@ import java.util.List;
 @Jacksonized
 @SuperBuilder
 public class RunDetailsResponse {
-    List<RunDetails> data;
+    RunDetails data;
     Boolean hasMore;
 }

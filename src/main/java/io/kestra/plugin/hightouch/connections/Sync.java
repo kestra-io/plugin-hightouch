@@ -116,7 +116,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                         HttpResponse<RunDetailsResponse> detailsResponse = this.request(
                                 "GET",
                                 UriTemplate
-                                        .of("/api/v1/syncs/{syncId}/?runId={runId}")
+                                        .of("/api/v1/syncs/{syncId}/runs?runId={runId}")
                                         .expand(Map.of(
                                                 "syncId", runContext.render(this.syncId.toString()),
                                                 "runId", runId
@@ -127,11 +127,11 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 RunDetailsResponse runDetailsResponse = detailsResponse.getBody().orElseThrow(() -> new IllegalStateException("Missing body on trigger"));
 
                 // Check we correctly get one Run
-                if (runDetailsResponse.getData().size() != 1) {
+                if (runDetailsResponse.getData().getStatus().toString().isEmpty()) {
                     logger.warn("Could not find the triggered runId {}", runId);
                 }
 
-                RunDetails runDetails = runDetailsResponse.getData().get(0);
+                RunDetails runDetails = runDetailsResponse.getData();
                 sendLog(logger, runDetails);
 
                 // ended
