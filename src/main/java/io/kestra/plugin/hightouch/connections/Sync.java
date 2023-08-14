@@ -12,9 +12,6 @@ import io.kestra.plugin.hightouch.models.Run;
 import io.kestra.plugin.hightouch.models.RunDetails;
 import io.kestra.plugin.hightouch.models.RunDetailsResponse;
 import io.kestra.plugin.hightouch.models.RunStatus;
-import io.micronaut.core.type.Argument;
-import io.micronaut.http.HttpMethod;
-import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.uri.UriTemplate;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -91,19 +88,15 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     public Sync.Output run(RunContext runContext) throws Exception {
         Logger logger = runContext.logger();
 
-        // create sync
+        // Trigger sync run
         HttpResponse<Run> syncResponse = this.request(
-            runContext,
-            HttpRequest
-                .create(
-                    HttpMethod.POST,
-                    UriTemplate
+                "POST",
+                UriTemplate
                         .of("/api/v1/syncs/{syncId}/trigger")
                         .expand(Map.of(
                                 "syncId", runContext.render(this.syncId.toString())
-                        ))
-                ),
-            Argument.of(Run.class)
+                        )),
+                Run.class
         );
 
         Run jobInfoRead = syncResponse.getBody().orElseThrow(() -> new IllegalStateException("Missing body on trigger"));
@@ -120,20 +113,16 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         // wait for end
         RunDetails finalJobStatus = Await.until(
             throwSupplier(() -> {
-                HttpResponse<RunDetailsResponse> detailsResponse = this.request(
-                    runContext,
-                    HttpRequest
-                        .create(
-                            HttpMethod.GET,
-                            UriTemplate
-                                .of("/api/v1/syncs/{syncId}/?runId={runId}")
-                                .expand(Map.of(
-                                        "syncId", runContext.render(this.syncId.toString()),
-                                        "runId", runId
-                                ))
-                        ),
-                    Argument.of(RunDetailsResponse.class)
-                );
+                        HttpResponse<RunDetailsResponse> detailsResponse = this.request(
+                                "GET",
+                                UriTemplate
+                                        .of("/api/v1/syncs/{syncId}/?runId={runId}")
+                                        .expand(Map.of(
+                                                "syncId", runContext.render(this.syncId.toString()),
+                                                "runId", runId
+                                        )),
+                                RunDetailsResponse.class
+                        );
 
                 RunDetailsResponse runDetailsResponse = detailsResponse.getBody().orElseThrow(() -> new IllegalStateException("Missing body on trigger"));
 

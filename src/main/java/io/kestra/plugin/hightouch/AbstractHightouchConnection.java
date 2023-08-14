@@ -1,19 +1,20 @@
 package io.kestra.plugin.hightouch;
 
-import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.tasks.Task;
-import io.kestra.core.runners.RunContext;
-import io.micronaut.core.type.Argument;
-import io.micronaut.http.HttpResponse;
-import io.micronaut.http.MediaType;
-import io.micronaut.http.MutableHttpRequest;
-import io.micronaut.http.client.DefaultHttpClientConfiguration;
-import io.micronaut.http.client.HttpClient;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
+import java.net.http.HttpRequest;
+import java.net.MalformedURLException;
+import java.net.ConnectException;
+import java.nio.charset.StandardCharsets;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
-import io.micronaut.http.client.netty.DefaultHttpClient;
-import io.micronaut.http.client.netty.NettyHttpClientFactory;
-import io.micronaut.http.codec.MediaTypeCodecRegistry;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -22,9 +23,6 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import javax.validation.constraints.NotNull;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 @SuperBuilder
 @ToString
@@ -40,34 +38,39 @@ public abstract class AbstractHightouchConnection extends Task {
     @PluginProperty(dynamic = true)
     String token;
 
-    private static final NettyHttpClientFactory FACTORY = new NettyHttpClientFactory();
+    protected <REQ, RES> io.micronaut.http.HttpResponse <RES> request(String method, String path, Class<RES> responseType) throws IOException, InterruptedException {
 
-    protected HttpClient client(RunContext runContext) throws IllegalVariableEvaluationException, MalformedURLException, URISyntaxException {
-        MediaTypeCodecRegistry mediaTypeCodecRegistry = runContext.getApplicationContext().getBean(MediaTypeCodecRegistry.class);
+        HttpClient httpClient = HttpClient.newBuilder().build();
+        String baseUrl = "https://api.hightouch.com";
+        ObjectMapper objectMapper = new ObjectMapper(); // Jackson ObjectMapper for JSON parsing
 
-        DefaultHttpClient client = (DefaultHttpClient) FACTORY.createClient(URI.create("https://api.hightouch.com").toURL(), new DefaultHttpClientConfiguration());
-        client.setMediaTypeCodecRegistry(mediaTypeCodecRegistry);
-
-        return client;
-    }
-
-    protected <REQ, RES> HttpResponse<RES> request(RunContext runContext, MutableHttpRequest<REQ> request, Argument<RES> argument) throws HttpClientResponseException {
         try {
-            request = request
-                .bearerAuth(runContext.render(this.token))
-                .contentType(MediaType.APPLICATION_JSON);
+            URI fullPath = URI.create(baseUrl).resolve(path);
 
-            try (HttpClient client = this.client(runContext)) {
-                return client.toBlocking().exchange(request, argument);
+            HttpRequest request = HttpRequest.newBuilder(fullPath)
+                    .method(method, HttpRequest.BodyPublishers.ofString("{}", StandardCharsets.UTF_8))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + token)
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            RES parsedBody =  objectMapper.readValue(response.body(), responseType);
+
+            if (response.statusCode() == 200) {
+                return io.micronaut.http.HttpResponse.created(parsedBody, fullPath)
+                        .status(response.statusCode());
             }
-        } catch (HttpClientResponseException e) {
-            System.out.println("Request failed '" + e.getStatus().getCode() + "' and body '" + e.getResponse().getBody(String.class).orElse("null") + "'");
-            throw new HttpClientResponseException(
-                "Request failed '" + e.getStatus().getCode() + "' and body '" + e.getResponse().getBody(String.class).orElse("null") + "'",
-                e,
-                e.getResponse()
-            );
-        } catch (IllegalVariableEvaluationException | MalformedURLException | URISyntaxException e) {
+            else {
+                System.out.println("Request failed '" + response.statusCode() + "' and body '" + response.body() + "'");
+                throw new HttpClientResponseException(
+                        "Request failed '" + response.statusCode() + "' and body '" + response.body() + "'",
+                        io.micronaut.http.HttpResponse.created(parsedBody, fullPath)
+                        .status(response.statusCode()));
+            }
+        } catch (ConnectException e) {
+            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
+        } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
     }
