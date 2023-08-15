@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
 import io.kestra.plugin.hightouch.connections.Sync;
+import io.micronaut.context.annotation.Value;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
@@ -17,13 +18,19 @@ class SyncTest {
     @Inject
     private RunContextFactory runContextFactory;
 
+    @Value("${hightouch.sync-id}")
+    private Integer syncId;
+
+    @Value("${hightouch.token}")
+    private String token;
+
     @Test
     void run() throws Exception {
         RunContext runContext = runContextFactory.of(ImmutableMap.of());
 
         Sync task = Sync.builder()
-                .token("YOUR_TOKEN")
-                .syncId(90)
+                .token(this.token)
+                .syncId(this.syncId)
                 .build();
 
         Sync.Output runOutput = task.run(runContext);
