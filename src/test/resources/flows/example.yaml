@@ -2,7 +2,7 @@ id: example
 namespace: io.kestra.hightouch
 
 tasks:
-- id: date
-  type: io.kestra.plugin.hightouch.connections.Sync
+- id: trigger_run
+  type: io.kestra.plugin.hightouch.Sync
   token: "YOUR_API_TOKEN"
   syncId: 1127166
