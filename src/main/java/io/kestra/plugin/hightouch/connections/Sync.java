@@ -54,6 +54,8 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         RunStatus.SUCCESS
     );
 
+    private static final Duration STATUS_REFRESH_RATE = Duration.ofSeconds(1);
+
     @Schema(
         title = "The sync id to trigger run"
     )
@@ -61,26 +63,26 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     private Long syncId;
 
     @Schema(
-            title = "Full Resynchronization"
+            title = "Whether to do a full resynchronization"
     )
     @PluginProperty(dynamic = true)
     @Builder.Default
     private Boolean fullResynchronization = false;
 
     @Schema(
-        title = "Wait for the end of the run.",
-        description = "Allowing to capture run status & logs"
+        title = "Whether to wait for the end of the run.",
+        description = "Allowing to capture run status and logs"
     )
     @PluginProperty
     @Builder.Default
-    Boolean wait = true;
+    private Boolean wait = true;
 
     @Schema(
         title = "The max total wait duration"
     )
     @PluginProperty
     @Builder.Default
-    Duration maxDuration = Duration.ofMinutes(60);
+    private Duration maxDuration = Duration.ofMinutes(5);
 
     @Builder.Default
     @Getter(AccessLevel.NONE)
@@ -168,7 +170,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 }
                 return null;
             }),
-            Duration.ofSeconds(2),
+            STATUS_REFRESH_RATE,
             this.maxDuration
         );
 
@@ -179,7 +181,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 finalJobStatus.getCreatedAt()
             ).toMillis());
 
-            throw new Exception("Failed run with status '" + finalJobStatus.getStatus() +
+            throw new RuntimeException("Failed run with status '" + finalJobStatus.getStatus() +
                 "' after " +  durationHumanized + ": " + finalJobStatus.getStatus()
             );
         }
