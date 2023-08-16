@@ -20,6 +20,7 @@ import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.slf4j.Logger;
 
+import javax.validation.constraints.NotNull;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +58,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     @Schema(
         title = "The sync id to trigger run"
     )
+    @NotNull
     @PluginProperty(dynamic = true)
     private Long syncId;
 
