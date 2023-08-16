@@ -127,7 +127,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 RunDetailsResponse runDetailsResponse = detailsResponse.getBody().orElseThrow(() -> new IllegalStateException("Missing body on trigger"));
 
                 // Check we correctly get one Run
-                if (runDetailsResponse.getData().getStatus().toString().isEmpty()) {
+                if (runDetailsResponse.getData().toString().isEmpty()) {
                     logger.warn("Could not find the triggered runId {}", runId);
                 }
 
@@ -140,7 +140,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 }
                 return null;
             }),
-            Duration.ofSeconds(1),
+            Duration.ofSeconds(2),
             this.maxDuration
         );
 
@@ -177,7 +177,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     }
 
     private void sendLog(Logger logger, RunDetails run) {
-        logger.info("[Run {}]: {}", run.getId(), run.getCompletionRatio());
+        logger.info("[Run {}]: {}", run.getId(), run.getStatus());
     }
 
     @Builder
