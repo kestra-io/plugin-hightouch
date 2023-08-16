@@ -19,7 +19,7 @@ class SyncTest {
     private RunContextFactory runContextFactory;
 
     @Value("${hightouch.sync-id}")
-    private Integer syncId;
+    private Long syncId;
 
     @Value("${hightouch.token}")
     private String token;
@@ -34,8 +34,6 @@ class SyncTest {
                 .build();
 
         Sync.Output runOutput = task.run(runContext);
-
-        System.out.println(runOutput.getRunId());
 
         assertThat(runOutput, is(notNullValue()));
         assertThat(runOutput.getRunId(), is(notNullValue()));

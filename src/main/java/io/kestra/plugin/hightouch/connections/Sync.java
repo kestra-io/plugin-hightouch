@@ -12,6 +12,8 @@ import io.kestra.plugin.hightouch.models.Run;
 import io.kestra.plugin.hightouch.models.RunDetails;
 import io.kestra.plugin.hightouch.models.RunDetailsResponse;
 import io.kestra.plugin.hightouch.models.RunStatus;
+import io.kestra.plugin.hightouch.models.SyncDetailsResponse;
+
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.uri.UriTemplate;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -56,7 +58,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         title = "The sync id to trigger run"
     )
     @PluginProperty(dynamic = true)
-    private Integer syncId;
+    private Long syncId;
 
     @Schema(
             title = "Full Resynchronization"
@@ -88,8 +90,21 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     public Sync.Output run(RunContext runContext) throws Exception {
         Logger logger = runContext.logger();
 
+        // Get details of sync to display slug
+        HttpResponse<SyncDetailsResponse> syncDetailsResponse = this.request(
+                "GET",
+                UriTemplate
+                        .of("/api/v1/syncs/{syncId}")
+                        .expand(Map.of(
+                                "syncId", runContext.render(this.syncId.toString())
+                        )),
+                SyncDetailsResponse.class
+        );
+
+        SyncDetailsResponse syncDetails = syncDetailsResponse.getBody().orElseThrow(() -> new IllegalStateException("Missing body on get sync"));
+
         // Trigger sync run
-        HttpResponse<Run> syncResponse = this.request(
+        HttpResponse<Run> triggerResponse = this.request(
                 "POST",
                 UriTemplate
                         .of("/api/v1/syncs/{syncId}/trigger")
@@ -99,9 +114,9 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 Run.class
         );
 
-        Run jobInfoRead = syncResponse.getBody().orElseThrow(() -> new IllegalStateException("Missing body on trigger"));
+        Run jobInfoRead = triggerResponse.getBody().orElseThrow(() -> new IllegalStateException("Missing body on trigger"));
 
-        logger.info("Job status {} with response: {}", syncResponse.getStatus(), jobInfoRead);
+        logger.info("Job status {} with response: {}", triggerResponse.getStatus(), jobInfoRead);
         Long runId = jobInfoRead.getId();
 
         if (!this.wait) {
@@ -126,13 +141,20 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
 
                 RunDetailsResponse runDetailsResponse = detailsResponse.getBody().orElseThrow(() -> new IllegalStateException("Missing body on trigger"));
 
-                // Check we correctly get one Run
-                if (runDetailsResponse.getData().toString().isEmpty()) {
+                // Check we correctly get one run
+                if (runDetailsResponse.getData().isEmpty()) {
                     logger.warn("Could not find the triggered runId {}", runId);
+                    throw new Exception("Failed : could not find the triggered runId : " + runId);
                 }
 
-                RunDetails runDetails = runDetailsResponse.getData();
-                sendLog(logger, runDetails);
+                // Illegal state where we have more than 1 item
+                if (runDetailsResponse.getData().size() > 1) {
+                    logger.warn("Found several entries for runId {}", runId);
+                    throw new Exception("Failed: found several runs with runId : " + runId);
+                }
+
+                RunDetails runDetails = runDetailsResponse.getData().get(0);
+                sendLog(logger, syncDetails, runDetails);
 
                 // ended
                 if (ENDED_STATUS.contains(runDetails.getStatus())) {
@@ -143,16 +165,6 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
             Duration.ofSeconds(2),
             this.maxDuration
         );
-
-        // failure message
-        /*
-        finalJobStatus.getAttempts()
-            .stream()
-            .map(AttemptInfo::getAttempt)
-            .map(Attempt::getFailureSummary)
-            .filter(Objects::nonNull)
-            .forEach(attemptFailureSummary -> logger.warn("Failure with reason {}", attemptFailureSummary));
-         */
 
         // handle failure
         if (!finalJobStatus.getStatus().equals(RunStatus.SUCCESS)) {
@@ -167,17 +179,21 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         }
 
         // metrics
-        // runContext.metric(Counter.of("attempts.count", finalJobStatus.getAttempts().size()));
+        runContext.metric(Counter.of("completionRatio", finalJobStatus.getCompletionRatio()));
         runContext.metric(Counter.of("rows.successfullyAdded", finalJobStatus.getSuccessfulRows().getAddedCount()));
         runContext.metric(Counter.of("rows.successfullyRemoved", finalJobStatus.getSuccessfulRows().getRemovedCount()));
+        runContext.metric(Counter.of("rows.successfullyChanged", finalJobStatus.getSuccessfulRows().getChangedCount()));
+        runContext.metric(Counter.of("rows.failedAdded", finalJobStatus.getFailedRows().getAddedCount()));
+        runContext.metric(Counter.of("rows.failedRemoved", finalJobStatus.getFailedRows().getRemovedCount()));
+        runContext.metric(Counter.of("rows.failedChanged", finalJobStatus.getFailedRows().getChangedCount()));
 
         return Output.builder()
             .runId(runId)
             .build();
     }
 
-    private void sendLog(Logger logger, RunDetails run) {
-        logger.info("[Run {}]: {}", run.getId(), run.getStatus());
+    private void sendLog(Logger logger, SyncDetailsResponse syncDetails, RunDetails run) {
+        logger.info("[syncId={}] {}: [runId={}] is now {}", syncDetails.getId(), syncDetails.getSlug(), run.getId(), run.getStatus());
     }
 
     @Builder

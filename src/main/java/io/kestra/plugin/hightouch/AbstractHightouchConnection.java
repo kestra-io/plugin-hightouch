@@ -45,7 +45,6 @@ public abstract class AbstractHightouchConnection extends Task {
         HttpClient httpClient = HttpClient.newBuilder().build();
         String baseUrl = "https://api.hightouch.com";
         ObjectMapper objectMapper = new ObjectMapper() // Jackson ObjectMapper for JSON parsing
-                .enable(DeserializationFeature.UNWRAP_SINGLE_VALUE_ARRAYS)
                 .registerModule(new JavaTimeModule());
 
         try {
@@ -58,17 +57,17 @@ public abstract class AbstractHightouchConnection extends Task {
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            RES parsedBody =  objectMapper.readValue(response.body(), responseType);
 
             if (response.statusCode() == 200) {
+                RES parsedBody =  objectMapper.readValue(response.body(), responseType);
                 return io.micronaut.http.HttpResponse.created(parsedBody, fullPath)
                         .status(response.statusCode());
             }
             else {
-                System.out.println("Request failed '" + response.statusCode() + "' and body '" + response.body() + "'");
+                System.out.println("Request failed with status '" + response.statusCode() + "' and body '" + response.body() + "'");
                 throw new HttpClientResponseException(
-                        "Request failed '" + response.statusCode() + "' and body '" + response.body() + "'",
-                        io.micronaut.http.HttpResponse.created(parsedBody, fullPath)
+                        "Request failed with status '" + response.statusCode() + "' and body '" + response.body() + "'",
+                        io.micronaut.http.HttpResponse.created(null, fullPath)
                         .status(response.statusCode()));
             }
         } catch (ConnectException e) {
