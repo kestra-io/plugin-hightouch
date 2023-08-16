@@ -1,6 +1,5 @@
 package io.kestra.plugin.hightouch.models;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
