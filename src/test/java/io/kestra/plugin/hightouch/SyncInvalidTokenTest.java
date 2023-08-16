@@ -1,27 +1,27 @@
-package io.kestra.plugin.hightouch.connections;
+package io.kestra.plugin.hightouch;
 
 import com.google.common.collect.ImmutableMap;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
 import io.micronaut.context.annotation.Value;
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
+import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @MicronautTest
-class SyncInvalidSyncIdTest {
+class SyncInvalidTokenTest {
     @Inject
     private RunContextFactory runContextFactory;
 
-    @Value("00000000000000000000000")
-    private Long invalidSyncId;
+    @Value("${hightouch.sync-id}")
+    private Long syncId;
 
-    @Value("${hightouch.token}")
+    @Value("INVALID_TOKEN")
     private String token;
 
     @Test
@@ -30,14 +30,15 @@ class SyncInvalidSyncIdTest {
 
         Sync task = Sync.builder()
                 .token(this.token)
-                .syncId(this.invalidSyncId)
+                .syncId(this.syncId)
                 .build();
 
         Throwable exception = assertThrows(
                 HttpClientResponseException.class,
                         () -> task.run(runContext),
-                        "Expected Sync() to throw 404 error with HttpClientResponseException, but it didn't"
+                        "Expected Sync() to throw 401 error with HttpClientResponseException, but it didn't"
         );
-        assertThat(exception.getMessage(), containsString("Request failed with status '404'"));
+        assertThat(exception.getMessage(), containsString("Request failed with status '401'"));
+        assertThat(exception.getMessage(), containsString("Token is invalid"));
     }
 }

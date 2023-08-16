@@ -1,4 +1,4 @@
-package io.kestra.plugin.hightouch.connections;
+package io.kestra.plugin.hightouch;
 
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
@@ -7,14 +7,12 @@ import io.kestra.core.models.executions.metrics.Counter;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.utils.Await;
-import io.kestra.plugin.hightouch.AbstractHightouchConnection;
 import io.kestra.plugin.hightouch.models.Run;
 import io.kestra.plugin.hightouch.models.RunDetails;
 import io.kestra.plugin.hightouch.models.RunDetailsResponse;
 import io.kestra.plugin.hightouch.models.RunStatus;
 import io.kestra.plugin.hightouch.models.SyncDetailsResponse;
 
-import io.micronaut.http.HttpResponse;
 import io.micronaut.http.uri.UriTemplate;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -93,7 +91,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         Logger logger = runContext.logger();
 
         // Get details of sync to display slug
-        HttpResponse<SyncDetailsResponse> syncDetailsResponse = this.request(
+        SyncDetailsResponse syncDetails = this.request(
                 "GET",
                 UriTemplate
                         .of("/api/v1/syncs/{syncId}")
@@ -104,10 +102,8 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 SyncDetailsResponse.class
         );
 
-        SyncDetailsResponse syncDetails = syncDetailsResponse.getBody().orElseThrow(() -> new IllegalStateException("Missing body on get sync"));
-
         // Trigger sync run
-        HttpResponse<Run> triggerResponse = this.request(
+        Run jobInfoRead = this.request(
                 "POST",
                 UriTemplate
                         .of("/api/v1/syncs/{syncId}/trigger")
@@ -121,9 +117,6 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 Run.class
         );
 
-        Run jobInfoRead = triggerResponse.getBody().orElseThrow(() -> new IllegalStateException("Missing body on trigger"));
-
-        logger.info("Job status {} with response: {}", triggerResponse.getStatus(), jobInfoRead);
         Long runId = jobInfoRead.getId();
 
         if (!this.wait) {
@@ -135,7 +128,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         // wait for end
         RunDetails finalJobStatus = Await.until(
             throwSupplier(() -> {
-                        HttpResponse<RunDetailsResponse> detailsResponse = this.request(
+                        RunDetailsResponse runDetailsResponse = this.request(
                                 "GET",
                                 UriTemplate
                                         .of("/api/v1/syncs/{syncId}/runs?runId={runId}")
@@ -146,8 +139,6 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                                 "{}",
                                 RunDetailsResponse.class
                         );
-
-                RunDetailsResponse runDetailsResponse = detailsResponse.getBody().orElseThrow(() -> new IllegalStateException("Missing body on trigger"));
 
                 // Check we correctly get one run
                 if (runDetailsResponse.getData().isEmpty()) {
@@ -188,9 +179,11 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
 
         // metrics
         runContext.metric(Counter.of("completionRatio", finalJobStatus.getCompletionRatio()));
+
         runContext.metric(Counter.of("rows.successfullyAdded", finalJobStatus.getSuccessfulRows().getAddedCount()));
         runContext.metric(Counter.of("rows.successfullyRemoved", finalJobStatus.getSuccessfulRows().getRemovedCount()));
         runContext.metric(Counter.of("rows.successfullyChanged", finalJobStatus.getSuccessfulRows().getChangedCount()));
+
         runContext.metric(Counter.of("rows.failedAdded", finalJobStatus.getFailedRows().getAddedCount()));
         runContext.metric(Counter.of("rows.failedRemoved", finalJobStatus.getFailedRows().getRemovedCount()));
         runContext.metric(Counter.of("rows.failedChanged", finalJobStatus.getFailedRows().getChangedCount()));

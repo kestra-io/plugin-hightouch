@@ -1,6 +1,5 @@
 package io.kestra.plugin.hightouch;
 
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.tasks.Task;
 
@@ -15,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.kestra.core.serializers.JacksonMapper;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
@@ -39,15 +39,15 @@ public abstract class AbstractHightouchConnection extends Task {
     @PluginProperty(dynamic = true)
     String token;
 
-    protected <REQ, RES> io.micronaut.http.HttpResponse <RES> request(String method, String path, String body, Class<RES> responseType) throws IOException, InterruptedException {
+    private final static String BASE_URL = "https://api.hightouch.com";
+    private final static ObjectMapper objectMapper = JacksonMapper.ofJson();
+
+    protected <REQ, RES> RES request(String method, String path, String body, Class<RES> responseType) throws IOException, InterruptedException {
 
         HttpClient httpClient = HttpClient.newBuilder().build();
-        String baseUrl = "https://api.hightouch.com";
-        ObjectMapper objectMapper = new ObjectMapper() // Jackson ObjectMapper for JSON parsing
-                .registerModule(new JavaTimeModule());
 
         try {
-            URI fullPath = URI.create(baseUrl).resolve(path);
+            URI fullPath = URI.create(BASE_URL).resolve(path);
 
             HttpRequest request = HttpRequest.newBuilder(fullPath)
                     .method(method, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
@@ -58,9 +58,7 @@ public abstract class AbstractHightouchConnection extends Task {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
-                RES parsedBody =  objectMapper.readValue(response.body(), responseType);
-                return io.micronaut.http.HttpResponse.created(parsedBody, fullPath)
-                        .status(response.statusCode());
+                return objectMapper.readValue(response.body(), responseType);
             }
             else {
                 System.out.println("Request failed with status '" + response.statusCode() + "' and body '" + response.body() + "'");
