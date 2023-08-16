@@ -8,7 +8,8 @@ public enum RunStatus {
     QUEUED("queued"),
     FAILED("failed"),
     CANCELLED("cancelled"),
-    SUCCESS("success");
+    SUCCESS("success"),
+    QUERYING("querying");
 
     private String value;
 
