@@ -18,8 +18,8 @@ class SyncInvalidSyncIdTest {
     @Inject
     private RunContextFactory runContextFactory;
 
-    @Value("${hightouch.invalid-sync-id}")
-    private Long syncId;
+    @Value("00000000000000000000000")
+    private Long invalidSyncId;
 
     @Value("${hightouch.token}")
     private String token;
@@ -30,7 +30,7 @@ class SyncInvalidSyncIdTest {
 
         Sync task = Sync.builder()
                 .token(this.token)
-                .syncId(this.syncId)
+                .syncId(this.invalidSyncId)
                 .build();
 
         Throwable exception = assertThrows(
