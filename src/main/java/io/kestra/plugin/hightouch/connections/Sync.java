@@ -98,6 +98,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                         .expand(Map.of(
                                 "syncId", runContext.render(this.syncId.toString())
                         )),
+                "{}",
                 SyncDetailsResponse.class
         );
 
@@ -111,6 +112,10 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                         .expand(Map.of(
                                 "syncId", runContext.render(this.syncId.toString())
                         )),
+                String.format(
+                        "{\"fullResync\": %s}",
+                        runContext.render(this.fullResynchronization.toString())
+                ),
                 Run.class
         );
 
@@ -136,6 +141,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                                                 "syncId", runContext.render(this.syncId.toString()),
                                                 "runId", runId
                                         )),
+                                "{}",
                                 RunDetailsResponse.class
                         );
 

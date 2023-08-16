@@ -39,7 +39,7 @@ public abstract class AbstractHightouchConnection extends Task {
     @PluginProperty(dynamic = true)
     String token;
 
-    protected <REQ, RES> io.micronaut.http.HttpResponse <RES> request(String method, String path, Class<RES> responseType) throws IOException, InterruptedException {
+    protected <REQ, RES> io.micronaut.http.HttpResponse <RES> request(String method, String path, String body, Class<RES> responseType) throws IOException, InterruptedException {
 
         HttpClient httpClient = HttpClient.newBuilder().build();
         String baseUrl = "https://api.hightouch.com";
@@ -50,7 +50,7 @@ public abstract class AbstractHightouchConnection extends Task {
             URI fullPath = URI.create(baseUrl).resolve(path);
 
             HttpRequest request = HttpRequest.newBuilder(fullPath)
-                    .method(method, HttpRequest.BodyPublishers.ofString("{}", StandardCharsets.UTF_8))
+                    .method(method, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + token)
                     .build();
