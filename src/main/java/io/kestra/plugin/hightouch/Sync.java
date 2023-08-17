@@ -120,6 +120,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         );
 
         Long runId = jobInfoRead.getId();
+        logger.info("[syncId={}] {}: Job triggered with runId {}", syncDetails.getId(), syncDetails.getSlug(), runId);
 
         if (!this.wait) {
             return Output.builder()
