@@ -145,14 +145,12 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
 
                 // Check we correctly get one run
                 if (runDetailsResponse.getData().isEmpty()) {
-                    logger.warn("Could not find the triggered runId {}", runId);
-                    throw new Exception("Failed : could not find the triggered runId : " + runId);
+                    throw new RuntimeException("Failed : could not find the triggered runId : " + runId);
                 }
 
                 // Illegal state where we have more than 1 item
                 if (runDetailsResponse.getData().size() > 1) {
-                    logger.warn("Found several entries for runId {}", runId);
-                    throw new Exception("Failed: found several runs with runId : " + runId);
+                    throw new RuntimeException("Failed: found several runs with runId : " + runId);
                 }
 
                 RunDetails runDetails = runDetailsResponse.getData().get(0);
