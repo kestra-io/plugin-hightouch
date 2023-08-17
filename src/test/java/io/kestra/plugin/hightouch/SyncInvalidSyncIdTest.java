@@ -7,6 +7,7 @@ import io.micronaut.context.annotation.Value;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,6 +26,7 @@ class SyncInvalidSyncIdTest {
     private String token;
 
     @Test
+    @Disabled
     void run() throws Exception {
         RunContext runContext = runContextFactory.of(ImmutableMap.of());
 

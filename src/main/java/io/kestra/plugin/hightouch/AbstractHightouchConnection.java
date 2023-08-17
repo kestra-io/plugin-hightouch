@@ -15,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.kestra.core.serializers.JacksonMapper;
-import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -30,7 +29,7 @@ import javax.validation.constraints.NotNull;
 @EqualsAndHashCode
 @Getter
 @NoArgsConstructor
-public abstract class AbstractHightouchConnection extends Task {
+abstract class AbstractHightouchConnection extends Task {
 
     @Schema(
         title = "API Bearer token"
@@ -40,7 +39,7 @@ public abstract class AbstractHightouchConnection extends Task {
     String token;
 
     private final static String BASE_URL = "https://api.hightouch.com";
-    private final static ObjectMapper objectMapper = JacksonMapper.ofJson();
+    private final static ObjectMapper OBJECT_MAPPER = JacksonMapper.ofJson();
 
     protected <REQ, RES> RES request(String method, String path, String body, Class<RES> responseType) throws IOException, InterruptedException {
 
@@ -58,19 +57,14 @@ public abstract class AbstractHightouchConnection extends Task {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
-                return objectMapper.readValue(response.body(), responseType);
+                return OBJECT_MAPPER.readValue(response.body(), responseType);
             }
             else {
-                System.out.println("Request failed with status '" + response.statusCode() + "' and body '" + response.body() + "'");
-                throw new HttpClientResponseException(
-                        "Request failed with status '" + response.statusCode() + "' and body '" + response.body() + "'",
-                        io.micronaut.http.HttpResponse.created(null, fullPath)
-                        .status(response.statusCode()));
+                throw new RuntimeException(
+                        "Request to '" + fullPath.getPath() + "' failed with status '" + response.statusCode() + "' and body '" + response.body() + "'"
+                );
             }
-        } catch (ConnectException e) {
-            System.out.println(e.getMessage());
-            throw new RuntimeException(e);
-        } catch (MalformedURLException e) {
+        } catch (ConnectException | MalformedURLException e) {
             throw new RuntimeException(e);
         }
     }

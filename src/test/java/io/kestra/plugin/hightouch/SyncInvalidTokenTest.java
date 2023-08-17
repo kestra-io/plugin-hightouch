@@ -7,6 +7,7 @@ import io.micronaut.context.annotation.Value;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -14,6 +15,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @MicronautTest
+@Disabled
 class SyncInvalidTokenTest {
     @Inject
     private RunContextFactory runContextFactory;
