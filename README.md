@@ -1,4 +1,4 @@
-# Kestra Plugin Template
+# Kestra Plugin Hightouch
 
 <p align="center">
   <img width="460" src="https://kestra.io/logo.svg"  alt="Kestra workflow orchestrator" />
