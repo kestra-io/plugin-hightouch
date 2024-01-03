@@ -20,7 +20,7 @@ import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.slf4j.Logger;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
