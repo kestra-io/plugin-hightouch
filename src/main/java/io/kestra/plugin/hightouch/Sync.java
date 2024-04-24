@@ -13,7 +13,6 @@ import io.kestra.plugin.hightouch.models.RunDetailsResponse;
 import io.kestra.plugin.hightouch.models.RunStatus;
 import io.kestra.plugin.hightouch.models.SyncDetailsResponse;
 
-import io.micronaut.http.uri.UriTemplate;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -92,14 +91,12 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     public Sync.Output run(RunContext runContext) throws Exception {
         Logger logger = runContext.logger();
 
+        final String syncId = runContext.render(this.syncId.toString());
+
         // Get details of sync to display slug
         SyncDetailsResponse syncDetails = this.request(
                 "GET",
-                UriTemplate
-                        .of("/api/v1/syncs/{syncId}")
-                        .expand(Map.of(
-                                "syncId", runContext.render(this.syncId.toString())
-                        )),
+                String.format("/api/v1/syncs/%s", syncId),
                 "{}",
                 SyncDetailsResponse.class
         );
@@ -107,11 +104,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         // Trigger sync run
         Run jobInfoRead = this.request(
                 "POST",
-                UriTemplate
-                        .of("/api/v1/syncs/{syncId}/trigger")
-                        .expand(Map.of(
-                                "syncId", runContext.render(this.syncId.toString())
-                        )),
+                String.format("/api/v1/syncs/%s/trigger", syncId),
                 String.format(
                         "{\"fullResync\": %s}",
                         runContext.render(this.fullResynchronization.toString())
@@ -133,12 +126,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
             throwSupplier(() -> {
                         RunDetailsResponse runDetailsResponse = this.request(
                                 "GET",
-                                UriTemplate
-                                        .of("/api/v1/syncs/{syncId}/runs?runId={runId}")
-                                        .expand(Map.of(
-                                                "syncId", runContext.render(this.syncId.toString()),
-                                                "runId", runId
-                                        )),
+                                String.format("/api/v1/syncs/%s/runs?runId=%s", syncId, runId),
                                 "{}",
                                 RunDetailsResponse.class
                         );
