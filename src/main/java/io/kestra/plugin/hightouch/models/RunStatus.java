@@ -9,9 +9,12 @@ public enum RunStatus {
     FAILED("failed"),
     CANCELLED("cancelled"),
     SUCCESS("success"),
-    QUERYING("querying");
+    QUERYING("querying"),
+    WARNING("warning"),
+    REPORTING("reporting"),
+    INTERRUPTED("interrupted");
 
-    private String value;
+    private final String value;
 
     RunStatus(String value) {
         this.value = value;

@@ -5,6 +5,9 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 import java.util.List;
 
+/**
+ * see <a href="https://hightouch.com/docs/api-reference#operation/ListSyncRuns">ListSyncRuns</a>
+ */
 @Value
 @Jacksonized
 @SuperBuilder

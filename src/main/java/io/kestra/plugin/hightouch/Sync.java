@@ -141,7 +141,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                     throw new RuntimeException("Failed: found several runs with runId : " + runId);
                 }
 
-                RunDetails runDetails = runDetailsResponse.getData().get(0);
+                RunDetails runDetails = runDetailsResponse.getData().getFirst();
                 sendLog(logger, syncDetails, runDetails);
 
                 // ended
