@@ -165,7 +165,7 @@ jar {
         attributes(
                 "X-Kestra-Name": project.name,
                 "X-Kestra-Title": "Hightouch",
-                "X-Kestra-Group": project.group + ".templates",
+                "X-Kestra-Group": project.group + ".hightouch",
                 "X-Kestra-Description": project.description,
                 "X-Kestra-Version": project.version
         )
