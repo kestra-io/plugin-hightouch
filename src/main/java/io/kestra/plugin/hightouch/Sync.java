@@ -38,10 +38,17 @@ import static io.kestra.core.utils.Rethrow.throwSupplier;
 @Plugin(
     examples = {
         @Example(
-            code = {
-                "token: YOUR_API_TOKEN",
-                "syncId: 1127166",
-            }
+            full = true,
+            code = """
+                id: hightouch_sync
+                namespace: company.team
+
+                tasks:
+                  - id: sync
+                    type: io.kestra.plugin.hightouch.Sync
+                    token: YOUR_API_TOKEN
+                    syncId: 1127166 
+                """
         )
     }
 )
