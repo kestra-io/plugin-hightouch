@@ -1,6 +1,7 @@
 package io.kestra.plugin.hightouch;
 
-import io.kestra.core.models.annotations.PluginProperty;
+import io.kestra.core.exceptions.IllegalVariableEvaluationException;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.Task;
 
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.kestra.core.runners.RunContext;
 import io.kestra.core.serializers.JacksonMapper;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
@@ -35,13 +37,12 @@ abstract class AbstractHightouchConnection extends Task {
         title = "API Bearer token"
     )
     @NotNull
-    @PluginProperty(dynamic = true)
-    String token;
+    Property<String> token;
 
     private final static String BASE_URL = "https://api.hightouch.com";
     private final static ObjectMapper OBJECT_MAPPER = JacksonMapper.ofJson();
 
-    protected <REQ, RES> RES request(String method, String path, String body, Class<RES> responseType) throws IOException, InterruptedException {
+    protected <REQ, RES> RES request(String method, String path, String body, Class<RES> responseType, RunContext runContext) throws IOException, InterruptedException {
 
         HttpClient httpClient = HttpClient.newBuilder().build();
 
@@ -51,7 +52,7 @@ abstract class AbstractHightouchConnection extends Task {
             HttpRequest request = HttpRequest.newBuilder(fullPath)
                     .method(method, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + token)
+                    .header("Authorization", "Bearer " + runContext.render(token).as(String.class).orElseThrow())
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -64,7 +65,7 @@ abstract class AbstractHightouchConnection extends Task {
                         "Request to '" + fullPath.getPath() + "' failed with status '" + response.statusCode() + "' and body '" + response.body() + "'"
                 );
             }
-        } catch (ConnectException | MalformedURLException e) {
+        } catch (ConnectException | MalformedURLException | IllegalVariableEvaluationException e) {
             throw new RuntimeException(e);
         }
     }

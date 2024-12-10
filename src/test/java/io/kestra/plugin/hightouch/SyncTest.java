@@ -1,6 +1,7 @@
 package io.kestra.plugin.hightouch;
 
 import com.google.common.collect.ImmutableMap;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
 import io.micronaut.context.annotation.Value;
@@ -30,8 +31,8 @@ class SyncTest {
         RunContext runContext = runContextFactory.of(ImmutableMap.of());
 
         Sync task = Sync.builder()
-                .token(this.token)
-                .syncId(this.syncId)
+                .token(Property.of(this.token))
+                .syncId(Property.of(this.syncId))
                 .build();
 
         Sync.Output runOutput = task.run(runContext);

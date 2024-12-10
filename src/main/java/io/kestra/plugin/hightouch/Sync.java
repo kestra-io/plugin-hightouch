@@ -2,8 +2,8 @@ package io.kestra.plugin.hightouch;
 
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
-import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.executions.metrics.Counter;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.utils.Await;
@@ -47,7 +47,7 @@ import static io.kestra.core.utils.Rethrow.throwSupplier;
                   - id: sync
                     type: io.kestra.plugin.hightouch.Sync
                     token: YOUR_API_TOKEN
-                    syncId: 1127166 
+                    syncId: 1127166
                 """
         )
     }
@@ -65,30 +65,26 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         title = "The sync id to trigger run"
     )
     @NotNull
-    @PluginProperty(dynamic = true)
-    private Long syncId;
+    private Property<Long> syncId;
 
     @Schema(
             title = "Whether to do a full resynchronization"
     )
-    @PluginProperty(dynamic = true)
     @Builder.Default
-    private Boolean fullResynchronization = false;
+    private Property<Boolean> fullResynchronization = Property.of(false);
 
     @Schema(
         title = "Whether to wait for the end of the run.",
         description = "Allowing to capture run status and logs"
     )
-    @PluginProperty
     @Builder.Default
-    private Boolean wait = true;
+    private Property<Boolean> wait = Property.of(true);
 
     @Schema(
         title = "The max total wait duration"
     )
-    @PluginProperty
     @Builder.Default
-    private Duration maxDuration = Duration.ofMinutes(5);
+    private Property<Duration> maxDuration = Property.of(Duration.ofMinutes(5));
 
     @Builder.Default
     @Getter(AccessLevel.NONE)
@@ -98,14 +94,15 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     public Sync.Output run(RunContext runContext) throws Exception {
         Logger logger = runContext.logger();
 
-        final String syncId = runContext.render(this.syncId.toString());
+        final String syncId = runContext.render(this.syncId).as(Long.class).orElseThrow().toString();
 
         // Get details of sync to display slug
         SyncDetailsResponse syncDetails = this.request(
                 "GET",
                 String.format("/api/v1/syncs/%s", syncId),
                 "{}",
-                SyncDetailsResponse.class
+                SyncDetailsResponse.class,
+                runContext
         );
 
         // Trigger sync run
@@ -114,15 +111,16 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 String.format("/api/v1/syncs/%s/trigger", syncId),
                 String.format(
                         "{\"fullResync\": %s}",
-                        runContext.render(this.fullResynchronization.toString())
+                        runContext.render(runContext.render(this.fullResynchronization).as(Boolean.class).orElseThrow().toString())
                 ),
-                Run.class
+                Run.class,
+                runContext
         );
 
         Long runId = jobInfoRead.getId();
         logger.info("[syncId={}] {}: Job triggered with runId {}", syncDetails.getId(), syncDetails.getSlug(), runId);
 
-        if (!this.wait) {
+        if (!runContext.render(wait).as(Boolean.class).orElseThrow()) {
             return Output.builder()
                 .runId(runId)
                 .build();
@@ -135,7 +133,8 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                                 "GET",
                                 String.format("/api/v1/syncs/%s/runs?runId=%s", syncId, runId),
                                 "{}",
-                                RunDetailsResponse.class
+                                RunDetailsResponse.class,
+                                runContext
                         );
 
                 // Check we correctly get one run
@@ -158,7 +157,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 return null;
             }),
             STATUS_REFRESH_RATE,
-            this.maxDuration
+            runContext.render(this.maxDuration).as(Duration.class).orElseThrow()
         );
 
         // handle failure
