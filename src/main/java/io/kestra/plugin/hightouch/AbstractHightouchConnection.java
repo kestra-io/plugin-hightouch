@@ -1,28 +1,23 @@
 package io.kestra.plugin.hightouch;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.Task;
+import io.kestra.core.runners.RunContext;
+import io.kestra.core.http.HttpRequest;
+import io.kestra.core.http.HttpResponse;
+import io.kestra.core.http.client.HttpClient;
+import io.kestra.core.http.client.HttpClientException;
+import io.kestra.core.http.client.configurations.HttpConfiguration;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.net.http.HttpRequest;
-import java.net.MalformedURLException;
-import java.net.ConnectException;
-import java.nio.charset.StandardCharsets;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.kestra.core.runners.RunContext;
-import io.kestra.core.serializers.JacksonMapper;
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
 
 import jakarta.validation.constraints.NotNull;
 
@@ -31,42 +26,57 @@ import jakarta.validation.constraints.NotNull;
 @EqualsAndHashCode
 @Getter
 @NoArgsConstructor
-abstract class AbstractHightouchConnection extends Task {
+public abstract class AbstractHightouchConnection extends Task {
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        .registerModule(new JavaTimeModule());
 
-    @Schema(
-        title = "API Bearer token"
-    )
+    private static final String BASE_URL = "https://api.hightouch.com";
+
+    @Schema(title = "API Bearer token")
     @NotNull
-    Property<String> token;
+    private Property<String> token;
 
-    private final static String BASE_URL = "https://api.hightouch.com";
-    private final static ObjectMapper OBJECT_MAPPER = JacksonMapper.ofJson();
+    @Schema(title = "The HTTP client configuration.")
+    protected HttpConfiguration options;
 
-    protected <REQ, RES> RES request(String method, String path, String body, Class<RES> responseType, RunContext runContext) throws IOException, InterruptedException {
+    /**
+     * @param method        The HTTP method (GET, POST, PUT, DELETE).
+     * @param path          The API endpoint path.
+     * @param body          The request body (nullable).
+     * @param responseType  The expected response type.
+     * @param runContext    The Kestra run context.
+     * @param <RES>         The response class.
+     * @return HttpResponse of type RES.
+     */
+    protected <RES> HttpResponse<RES> request(String method, String path, Object body, Class<RES> responseType, RunContext runContext)
+        throws HttpClientException, IllegalVariableEvaluationException {
 
-        HttpClient httpClient = HttpClient.newBuilder().build();
+        URI fullUri = URI.create(BASE_URL + path);
 
-        try {
-            URI fullPath = URI.create(BASE_URL).resolve(path);
+        HttpRequest.HttpRequestBuilder requestBuilder = HttpRequest.builder()
+            .uri(fullUri)
+            .method(method)
+            .addHeader("Authorization", "Bearer " + runContext.render(this.token).as(String.class).orElseThrow())
+            .addHeader("Content-Type", "application/json");
 
-            HttpRequest request = HttpRequest.newBuilder(fullPath)
-                    .method(method, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + runContext.render(token).as(String.class).orElseThrow())
-                    .build();
+        if (body != null) {
+            requestBuilder.body(HttpRequest.JsonRequestBody.builder().content(body).build());
+        }
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        try (HttpClient client = new HttpClient(runContext, options)) {
+            HttpResponse<String> response = client.request(requestBuilder.build(), String.class);
 
-            if (response.statusCode() == 200) {
-                return OBJECT_MAPPER.readValue(response.body(), responseType);
-            }
-            else {
-                throw new RuntimeException(
-                        "Request to '" + fullPath.getPath() + "' failed with status '" + response.statusCode() + "' and body '" + response.body() + "'"
-                );
-            }
-        } catch (ConnectException | MalformedURLException | IllegalVariableEvaluationException e) {
-            throw new RuntimeException(e);
+            RES parsedResponse = MAPPER.readValue(response.getBody(), responseType);
+            return HttpResponse.<RES>builder()
+                .request(requestBuilder.build())
+                .body(parsedResponse)
+                .headers(response.getHeaders())
+                .status(response.getStatus())
+                .build();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Error executing HTTP request", e);
         }
     }
 }

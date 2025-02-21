@@ -1,5 +1,6 @@
 package io.kestra.plugin.hightouch;
 
+import io.kestra.core.http.HttpResponse;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.executions.metrics.Counter;
@@ -97,7 +98,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         final String syncId = runContext.render(this.syncId).as(Long.class).orElseThrow().toString();
 
         // Get details of sync to display slug
-        SyncDetailsResponse syncDetails = this.request(
+       HttpResponse<SyncDetailsResponse> syncDetails = this.request(
                 "GET",
                 String.format("/api/v1/syncs/%s", syncId),
                 "{}",
@@ -106,7 +107,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         );
 
         // Trigger sync run
-        Run jobInfoRead = this.request(
+        HttpResponse<Run> jobInfoRead = this.request(
                 "POST",
                 String.format("/api/v1/syncs/%s/trigger", syncId),
                 String.format(
@@ -117,8 +118,8 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 runContext
         );
 
-        Long runId = jobInfoRead.getId();
-        logger.info("[syncId={}] {}: Job triggered with runId {}", syncDetails.getId(), syncDetails.getSlug(), runId);
+        Long runId = jobInfoRead.getBody().getId();
+        logger.info("[syncId={}] {}: Job triggered with runId {}", syncDetails.getBody().getId(), syncDetails.getBody().getSlug(), runId);
 
         if (!runContext.render(wait).as(Boolean.class).orElseThrow()) {
             return Output.builder()
@@ -129,7 +130,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         // wait for end
         RunDetails finalJobStatus = Await.until(
             throwSupplier(() -> {
-                        RunDetailsResponse runDetailsResponse = this.request(
+                HttpResponse<RunDetailsResponse> runDetailsResponse = this.request(
                                 "GET",
                                 String.format("/api/v1/syncs/%s/runs?runId=%s", syncId, runId),
                                 "{}",
@@ -138,17 +139,17 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                         );
 
                 // Check we correctly get one run
-                if (runDetailsResponse.getData().isEmpty()) {
+                if (runDetailsResponse.getBody().getData().isEmpty()) {
                     throw new RuntimeException("Failed : could not find the triggered runId : " + runId);
                 }
 
                 // Illegal state where we have more than 1 item
-                if (runDetailsResponse.getData().size() > 1) {
+                if (runDetailsResponse.getBody().getData().size() > 1) {
                     throw new RuntimeException("Failed: found several runs with runId : " + runId);
                 }
 
-                RunDetails runDetails = runDetailsResponse.getData().getFirst();
-                sendLog(logger, syncDetails, runDetails);
+                RunDetails runDetails = runDetailsResponse.getBody().getData().getFirst();
+                sendLog(logger, syncDetails.getBody(), runDetails);
 
                 // ended
                 if (ENDED_STATUS.contains(runDetails.getStatus())) {
