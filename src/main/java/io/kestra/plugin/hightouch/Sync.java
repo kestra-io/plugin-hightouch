@@ -40,6 +40,7 @@ import static io.kestra.core.utils.Rethrow.throwSupplier;
     examples = {
         @Example(
             full = true,
+            title = "Run a Hightouch sync"
             code = """
                 id: hightouch_sync
                 namespace: company.team
@@ -47,7 +48,7 @@ import static io.kestra.core.utils.Rethrow.throwSupplier;
                 tasks:
                   - id: sync
                     type: io.kestra.plugin.hightouch.Sync
-                    token: YOUR_API_TOKEN
+                    token: "{{ secret('HIGHTOUCH_API_TOKEN') }}"
                     syncId: 1127166
                 """
         )
