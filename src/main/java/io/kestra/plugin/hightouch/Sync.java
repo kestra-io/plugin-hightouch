@@ -40,7 +40,7 @@ import static io.kestra.core.utils.Rethrow.throwSupplier;
     examples = {
         @Example(
             full = true,
-            title = "Run a Hightouch sync"
+            title = "Run a Hightouch sync",
             code = """
                 id: hightouch_sync
                 namespace: company.team
