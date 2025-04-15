@@ -34,7 +34,7 @@ import static io.kestra.core.utils.Rethrow.throwSupplier;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Trigger a Hightouch sync and optionally wait for its completion"
+    title = "Trigger a Hightouch sync and wait for its completion."
 )
 @Plugin(
     examples = {
