@@ -26,4 +26,5 @@ public class SyncDetailsResponse {
     Instant lastRunAt;
     List<String> referencedColumns;
     String primaryKey;
+    Map<String, Object> externalSegment;
 }
