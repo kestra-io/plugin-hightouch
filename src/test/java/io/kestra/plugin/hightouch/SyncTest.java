@@ -31,8 +31,8 @@ class SyncTest {
         RunContext runContext = runContextFactory.of(ImmutableMap.of());
 
         Sync task = Sync.builder()
-                .token(Property.of(this.token))
-                .syncId(Property.of(this.syncId))
+                .token(Property.ofValue(this.token))
+                .syncId(Property.ofValue(this.syncId))
                 .build();
 
         Sync.Output runOutput = task.run(runContext);
