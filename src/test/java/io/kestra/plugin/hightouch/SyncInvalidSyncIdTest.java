@@ -32,8 +32,8 @@ class SyncInvalidSyncIdTest {
         RunContext runContext = runContextFactory.of(ImmutableMap.of());
 
         Sync task = Sync.builder()
-                .token(Property.of(this.token))
-                .syncId(Property.of(this.invalidSyncId))
+                .token(Property.ofValue(this.token))
+                .syncId(Property.ofValue(this.invalidSyncId))
                 .build();
 
         Throwable exception = assertThrows(

@@ -73,20 +73,20 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
             title = "Whether to do a full resynchronization"
     )
     @Builder.Default
-    private Property<Boolean> fullResynchronization = Property.of(false);
+    private Property<Boolean> fullResynchronization = Property.ofValue(false);
 
     @Schema(
         title = "Whether to wait for the end of the run.",
         description = "Allowing to capture run status and logs"
     )
     @Builder.Default
-    private Property<Boolean> wait = Property.of(true);
+    private Property<Boolean> wait = Property.ofValue(true);
 
     @Schema(
         title = "The max total wait duration"
     )
     @Builder.Default
-    private Property<Duration> maxDuration = Property.of(Duration.ofMinutes(5));
+    private Property<Duration> maxDuration = Property.ofValue(Duration.ofMinutes(5));
 
     @Builder.Default
     @Getter(AccessLevel.NONE)
