@@ -12,6 +12,7 @@ import io.kestra.core.http.HttpResponse;
 import io.kestra.core.http.client.HttpClient;
 import io.kestra.core.http.client.HttpClientException;
 import io.kestra.core.http.client.configurations.HttpConfiguration;
+import io.micronaut.http.HttpMethod;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -57,11 +58,15 @@ public abstract class AbstractHightouchConnection extends Task {
         HttpRequest.HttpRequestBuilder requestBuilder = HttpRequest.builder()
             .uri(fullUri)
             .method(method)
-            .addHeader("Authorization", "Bearer " + runContext.render(this.token).as(String.class).orElseThrow())
-            .addHeader("Content-Type", "application/json");
+            .addHeader("Authorization", "Bearer " + runContext.render(this.token).as(String.class).orElseThrow());
 
-        if (body != null) {
-            requestBuilder.body(HttpRequest.JsonRequestBody.builder().content(body).build());
+        if (!HttpMethod.GET.name().equalsIgnoreCase(method) && body != null) {
+            requestBuilder.addHeader("Content-Type", "application/json");
+            if (body instanceof String) {
+                requestBuilder.body(HttpRequest.StringRequestBody.builder().content((String) body).build());
+            } else {
+                requestBuilder.body(HttpRequest.JsonRequestBody.builder().content(body).build());
+            }
         }
 
         try (HttpClient client = new HttpClient(runContext, options)) {

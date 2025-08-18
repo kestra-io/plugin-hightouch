@@ -113,7 +113,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 String.format("/api/v1/syncs/%s/trigger", syncId),
                 String.format(
                         "{\"fullResync\": %s}",
-                        runContext.render(runContext.render(this.fullResynchronization).as(Boolean.class).orElseThrow().toString())
+                        runContext.render(this.fullResynchronization).as(Boolean.class).orElse(false)
                 ),
                 Run.class,
                 runContext
