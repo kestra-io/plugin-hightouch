@@ -8,19 +8,14 @@ import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.utils.Await;
-import io.kestra.plugin.hightouch.models.Run;
-import io.kestra.plugin.hightouch.models.RunDetails;
-import io.kestra.plugin.hightouch.models.RunDetailsResponse;
-import io.kestra.plugin.hightouch.models.RunStatus;
-import io.kestra.plugin.hightouch.models.SyncDetailsResponse;
-
+import io.kestra.plugin.hightouch.models.*;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.slf4j.Logger;
 
-import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -70,7 +65,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     private Property<Long> syncId;
 
     @Schema(
-            title = "Whether to do a full resynchronization"
+        title = "Whether to do a full resynchronization"
     )
     @Builder.Default
     private Property<Boolean> fullResynchronization = Property.ofValue(false);
@@ -99,24 +94,24 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         final String syncId = runContext.render(this.syncId).as(Long.class).orElseThrow().toString();
 
         // Get details of sync to display slug
-       HttpResponse<SyncDetailsResponse> syncDetails = this.request(
-                "GET",
-                String.format("/api/v1/syncs/%s", syncId),
-                "{}",
-                SyncDetailsResponse.class,
-                runContext
+        HttpResponse<SyncDetailsResponse> syncDetails = this.request(
+            "GET",
+            String.format("/api/v1/syncs/%s", syncId),
+            "{}",
+            SyncDetailsResponse.class,
+            runContext
         );
 
         // Trigger sync run
         HttpResponse<Run> jobInfoRead = this.request(
-                "POST",
-                String.format("/api/v1/syncs/%s/trigger", syncId),
-                String.format(
-                        "{\"fullResync\": %s}",
-                        runContext.render(this.fullResynchronization).as(Boolean.class).orElse(false)
-                ),
-                Run.class,
-                runContext
+            "POST",
+            String.format("/api/v1/syncs/%s/trigger", syncId),
+            String.format(
+                "{\"fullResync\": %s}",
+                runContext.render(this.fullResynchronization).as(Boolean.class).orElse(false)
+            ),
+            Run.class,
+            runContext
         );
 
         Long runId = jobInfoRead.getBody().getId();
@@ -132,12 +127,12 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         RunDetails finalJobStatus = Await.until(
             throwSupplier(() -> {
                 HttpResponse<RunDetailsResponse> runDetailsResponse = this.request(
-                                "GET",
-                                String.format("/api/v1/syncs/%s/runs?runId=%s", syncId, runId),
-                                "{}",
-                                RunDetailsResponse.class,
-                                runContext
-                        );
+                    "GET",
+                    String.format("/api/v1/syncs/%s/runs?runId=%s", syncId, runId),
+                    "{}",
+                    RunDetailsResponse.class,
+                    runContext
+                );
 
                 // Check we correctly get one run
                 if (runDetailsResponse.getBody().getData().isEmpty()) {
@@ -163,15 +158,20 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         );
 
         // handle failure
-        if (!finalJobStatus.getStatus().equals(RunStatus.SUCCESS)) {
+        if (!List.of(RunStatus.SUCCESS, RunStatus.COMPLETED_WITH_ERRORS).contains(finalJobStatus.getStatus())) {
             String durationHumanized = DurationFormatUtils.formatDurationHMS(Duration.between(
                 finalJobStatus.getFinishedAt(),
                 finalJobStatus.getCreatedAt()
             ).toMillis());
 
             throw new RuntimeException("Failed run with status '" + finalJobStatus.getStatus() +
-                "' after " +  durationHumanized + ": " + finalJobStatus.getStatus()
+                "' after " + durationHumanized + ": " + finalJobStatus.getStatus()
             );
+        }
+
+        if (finalJobStatus.getStatus() == RunStatus.COMPLETED_WITH_ERRORS) {
+            logger.warn("Run completed with errors (runId={}): {} failed rows", runId,
+                finalJobStatus.getFailedRows());
         }
 
         // metrics
