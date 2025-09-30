@@ -12,7 +12,8 @@ public enum RunStatus {
     QUERYING("querying"),
     WARNING("warning"),
     REPORTING("reporting"),
-    INTERRUPTED("interrupted");
+    INTERRUPTED("interrupted"),
+    COMPLETED_WITH_ERRORS("completed_with_errors");
 
     private final String value;
 
