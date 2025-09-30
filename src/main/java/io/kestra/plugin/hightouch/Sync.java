@@ -53,7 +53,8 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     private static final List<RunStatus> ENDED_STATUS = List.of(
         RunStatus.FAILED,
         RunStatus.CANCELLED,
-        RunStatus.SUCCESS
+        RunStatus.SUCCESS,
+        RunStatus.COMPLETED_WITH_ERRORS
     );
 
     private static final Duration STATUS_REFRESH_RATE = Duration.ofSeconds(1);
