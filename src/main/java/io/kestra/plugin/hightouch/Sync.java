@@ -54,7 +54,9 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         RunStatus.FAILED,
         RunStatus.CANCELLED,
         RunStatus.SUCCESS,
-        RunStatus.COMPLETED_WITH_ERRORS
+        RunStatus.COMPLETED_WITH_ERRORS,
+        RunStatus.WARNING,
+        RunStatus.INTERRUPTED
     );
 
     private static final Duration STATUS_REFRESH_RATE = Duration.ofSeconds(1);
@@ -147,6 +149,8 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
 
                 RunDetails runDetails = runDetailsResponse.getBody().getData().getFirst();
                 sendLog(logger, syncDetails.getBody(), runDetails);
+
+                logger.info("Status returned from the API: '{}'", runDetails.getStatus());
 
                 // ended
                 if (ENDED_STATUS.contains(runDetails.getStatus())) {
