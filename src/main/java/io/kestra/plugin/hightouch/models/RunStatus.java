@@ -13,7 +13,7 @@ public enum RunStatus {
     WARNING("warning"),
     REPORTING("reporting"),
     INTERRUPTED("interrupted"),
-    COMPLETED_WITH_ERRORS("Completed with errors");
+    COMPLETED_WITH_ERRORS("completed_with_errors");
 
     private final String value;
 
