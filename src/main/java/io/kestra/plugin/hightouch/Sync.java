@@ -126,7 +126,6 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 .build();
         }
 
-        // wait for end
         RunDetails finalJobStatus = Await.until(
             throwSupplier(() -> {
                 HttpResponse<RunDetailsResponse> runDetailsResponse = this.request(
@@ -137,55 +136,67 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                     runContext
                 );
 
-                // Check we correctly get one run
-                if (runDetailsResponse.getBody().getData().isEmpty()) {
-                    throw new RuntimeException("Failed : could not find the triggered runId : " + runId);
+                List<RunDetails> runs = runDetailsResponse.getBody().getData();
+
+                if (runs.isEmpty()) {
+                    logger.debug("[Hightouch] No runs found yet for syncId={} runId={} — retrying",
+                        syncId, runId);
+                    return null;
                 }
 
-                // Illegal state where we have more than 1 item
-                if (runDetailsResponse.getBody().getData().size() > 1) {
-                    throw new RuntimeException("Failed: found several runs with runId : " + runId);
+                RunDetails runDetails = runs.stream()
+                    .filter(r -> r.getId().equals(runId))
+                    .findFirst()
+                    .orElse(null);
+
+                if (runDetails == null) {
+                    logger.debug("[Hightouch] runId={} not yet visible in /runs response ({} total runs) — retrying",
+                        runId, runs.size());
+                    return null;
                 }
 
-                RunDetails runDetails = runDetailsResponse.getBody().getData().getFirst();
+                logger.info("[Hightouch] syncId={} runId={} current status='{}'",
+                    syncId, runId, runDetails.getStatus());
+
                 sendLog(logger, syncDetails.getBody(), runDetails);
 
-                logger.info("Status returned from the API: '{}'", runDetails.getStatus());
-
-                // ended
                 if (ENDED_STATUS.contains(runDetails.getStatus())) {
                     return runDetails;
                 }
+
                 return null;
             }),
             STATUS_REFRESH_RATE,
             runContext.render(this.maxDuration).as(Duration.class).orElseThrow()
         );
 
-        // handle failure
-        if (!List.of(RunStatus.SUCCESS, RunStatus.COMPLETED_WITH_ERRORS).contains(finalJobStatus.getStatus())) {
-            String durationHumanized = DurationFormatUtils.formatDurationHMS(Duration.between(
-                finalJobStatus.getFinishedAt(),
-                finalJobStatus.getCreatedAt()
-            ).toMillis());
+        if (!List.of(RunStatus.SUCCESS, RunStatus.COMPLETED_WITH_ERRORS, RunStatus.WARNING).contains(finalJobStatus.getStatus())) {
+            var createdAt = finalJobStatus.getCreatedAt();
+            var finishedAt = finalJobStatus.getFinishedAt();
+
+            String durationHumanized = finishedAt != null
+                ? DurationFormatUtils.formatDurationHMS(Duration.between(createdAt, finishedAt).toMillis())
+                : "N/A";
+
+            if (finishedAt == null) {
+                logger.warn("Run {} has null finishedAt - duration set to N/A", finalJobStatus.getId());
+            }
 
             throw new RuntimeException("Failed run with status '" + finalJobStatus.getStatus() +
                 "' after " + durationHumanized + ": " + finalJobStatus.getStatus()
             );
         }
 
-        if (finalJobStatus.getStatus() == RunStatus.COMPLETED_WITH_ERRORS) {
+        if (finalJobStatus.getStatus() == RunStatus.COMPLETED_WITH_ERRORS
+            || finalJobStatus.getStatus() == RunStatus.WARNING) {
             logger.warn("Run completed with errors (runId={}): {} failed rows", runId,
                 finalJobStatus.getFailedRows());
         }
 
-        // metrics
         runContext.metric(Counter.of("completionRatio", finalJobStatus.getCompletionRatio()));
-
         runContext.metric(Counter.of("rows.successfullyAdded", finalJobStatus.getSuccessfulRows().getAddedCount()));
         runContext.metric(Counter.of("rows.successfullyRemoved", finalJobStatus.getSuccessfulRows().getRemovedCount()));
         runContext.metric(Counter.of("rows.successfullyChanged", finalJobStatus.getSuccessfulRows().getChangedCount()));
-
         runContext.metric(Counter.of("rows.failedAdded", finalJobStatus.getFailedRows().getAddedCount()));
         runContext.metric(Counter.of("rows.failedRemoved", finalJobStatus.getFailedRows().getRemovedCount()));
         runContext.metric(Counter.of("rows.failedChanged", finalJobStatus.getFailedRows().getChangedCount()));
