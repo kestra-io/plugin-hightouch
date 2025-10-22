@@ -3,6 +3,7 @@ package io.kestra.plugin.hightouch;
 import io.kestra.core.http.HttpResponse;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
+import io.kestra.core.models.annotations.Metric;
 import io.kestra.core.models.executions.metrics.Counter;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
@@ -46,6 +47,43 @@ import static io.kestra.core.utils.Rethrow.throwSupplier;
                     token: "{{ secret('HIGHTOUCH_API_TOKEN') }}"
                     syncId: 1127166
                 """
+        )
+    },
+    metrics = {
+        @Metric(
+            name = "completion.ratio",
+            type = Counter.TYPE,
+            description = "The completion ratio of the Hightouch sync."
+        ),
+        @Metric(
+            name = "rows.successfully.added",
+            type = Counter.TYPE,
+            description = "Number of rows successfully added."
+        ),
+        @Metric(
+            name = "rows.successfully.removed",
+            type = Counter.TYPE,
+            description = "Number of rows successfully removed."
+        ),
+        @Metric(
+            name = "rows.successfully.changed",
+            type = Counter.TYPE,
+            description = "Number of rows successfully changed."
+        ),
+        @Metric(
+            name = "rows.failed.added",
+            type = Counter.TYPE,
+            description = "Number of rows failed to add."
+        ),
+        @Metric(
+            name = "rows.failed.removed",
+            type = Counter.TYPE,
+            description = "Number of rows failed to remove."
+        ),
+        @Metric(
+            name = "rows.failed.changed",
+            type = Counter.TYPE,
+            description = "Number of rows failed to change."
         )
     }
 )
@@ -193,13 +231,13 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 finalJobStatus.getFailedRows());
         }
 
-        runContext.metric(Counter.of("completionRatio", finalJobStatus.getCompletionRatio()));
-        runContext.metric(Counter.of("rows.successfullyAdded", finalJobStatus.getSuccessfulRows().getAddedCount()));
-        runContext.metric(Counter.of("rows.successfullyRemoved", finalJobStatus.getSuccessfulRows().getRemovedCount()));
-        runContext.metric(Counter.of("rows.successfullyChanged", finalJobStatus.getSuccessfulRows().getChangedCount()));
-        runContext.metric(Counter.of("rows.failedAdded", finalJobStatus.getFailedRows().getAddedCount()));
-        runContext.metric(Counter.of("rows.failedRemoved", finalJobStatus.getFailedRows().getRemovedCount()));
-        runContext.metric(Counter.of("rows.failedChanged", finalJobStatus.getFailedRows().getChangedCount()));
+        runContext.metric(Counter.of("completion.ratio", finalJobStatus.getCompletionRatio()));
+        runContext.metric(Counter.of("rows.successfully.added", finalJobStatus.getSuccessfulRows().getAddedCount()));
+        runContext.metric(Counter.of("rows.successfully.removed", finalJobStatus.getSuccessfulRows().getRemovedCount()));
+        runContext.metric(Counter.of("rows.successfully.changed", finalJobStatus.getSuccessfulRows().getChangedCount()));
+        runContext.metric(Counter.of("rows.failed.added", finalJobStatus.getFailedRows().getAddedCount()));
+        runContext.metric(Counter.of("rows.failed.removed", finalJobStatus.getFailedRows().getRemovedCount()));
+        runContext.metric(Counter.of("rows.failed.changed", finalJobStatus.getFailedRows().getChangedCount()));
 
         return Output.builder()
             .runId(runId)
