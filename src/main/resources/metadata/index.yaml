@@ -1,8 +1,8 @@
 group: io.kestra.plugin.hightouch
 name: "hightouch"
 title: "Hightouch"
-description: "This sub-group of plugins contains tasks for using Hightouch. Hightouch is a reverse ETL product which allows you to easily activate your data."
-body: ""
+description: "Tasks that trigger and monitor Hightouch syncs."
+body: "Provide a Hightouch API token and sync ID to start a sync, optionally wait for completion, and retrieve run status, modified rows, and errors for reverse ETL orchestration."
 videos: []
 createdBy: "Kestra Core Team"
 managedBy: "Kestra Core Team"
