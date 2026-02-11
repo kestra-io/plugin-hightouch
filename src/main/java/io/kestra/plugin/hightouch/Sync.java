@@ -30,7 +30,8 @@ import static io.kestra.core.utils.Rethrow.throwSupplier;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Trigger a Hightouch sync and wait for its completion."
+    title = "Trigger and monitor a Hightouch sync",
+    description = "Triggers a Hightouch sync by ID. Waits for completion by default, polling every second until a terminal status or the 5 minute maxDuration. Set wait=false to return only the runId; set fullResynchronization=true to force a full reload."
 )
 @Plugin(
     examples = {
@@ -100,26 +101,29 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     private static final Duration STATUS_REFRESH_RATE = Duration.ofSeconds(1);
 
     @Schema(
-        title = "The sync id to trigger run"
+        title = "Hightouch sync ID",
+        description = "Required numeric ID of the sync to trigger."
     )
     @NotNull
     private Property<Long> syncId;
 
     @Schema(
-        title = "Whether to do a full resynchronization"
+        title = "Force full resynchronization",
+        description = "Default false. Sends fullResync=true so Hightouch reloads all rows instead of incremental changes."
     )
     @Builder.Default
     private Property<Boolean> fullResynchronization = Property.ofValue(false);
 
     @Schema(
-        title = "Whether to wait for the end of the run.",
-        description = "Allowing to capture run status and logs"
+        title = "Wait for run completion",
+        description = "Default true. When false the task returns the runId immediately without polling status, metrics, or logs."
     )
     @Builder.Default
     private Property<Boolean> wait = Property.ofValue(true);
 
     @Schema(
-        title = "The max total wait duration"
+        title = "Maximum wait duration",
+        description = "Defaults to 5 minutes. Polls run status every second until a terminal state or this limit is reached."
     )
     @Builder.Default
     private Property<Duration> maxDuration = Property.ofValue(Duration.ofMinutes(5));
@@ -252,7 +256,8 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     @Getter
     public static class Output implements io.kestra.core.models.tasks.Output {
         @Schema(
-            title = "The runId of the sync created"
+            title = "Hightouch run ID",
+            description = "Identifier returned by Hightouch for the triggered run."
         )
         private final Long runId;
     }
