@@ -38,7 +38,7 @@ public abstract class AbstractHightouchConnection extends Task {
     @NotNull
     private Property<String> token;
 
-    @Schema(title = "The HTTP client configuration.")
+    @Schema(title = "The HTTP client configuration")
     protected HttpConfiguration options;
 
     /**
