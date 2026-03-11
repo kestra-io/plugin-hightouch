@@ -1,10 +1,10 @@
 package io.kestra.plugin.hightouch.models;
 
+import java.time.Instant;
+
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
-
-import java.time.Instant;
 
 @Value
 @Jacksonized

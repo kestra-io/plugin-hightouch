@@ -1,26 +1,28 @@
 package io.kestra.plugin.hightouch;
 
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.time.DurationFormatUtils;
+import org.slf4j.Logger;
+
 import io.kestra.core.http.HttpResponse;
 import io.kestra.core.models.annotations.Example;
-import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.Metric;
+import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.executions.metrics.Counter;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.utils.Await;
 import io.kestra.plugin.hightouch.models.*;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.apache.commons.lang3.time.DurationFormatUtils;
-import org.slf4j.Logger;
-
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static io.kestra.core.utils.Rethrow.throwSupplier;
 
@@ -169,7 +171,8 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         }
 
         RunDetails finalJobStatus = Await.until(
-            throwSupplier(() -> {
+            throwSupplier(() ->
+            {
                 HttpResponse<RunDetailsResponse> runDetailsResponse = this.request(
                     "GET",
                     String.format("/api/v1/syncs/%s/runs?runId=%s", syncId, runId),
@@ -181,8 +184,10 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 List<RunDetails> runs = runDetailsResponse.getBody().getData();
 
                 if (runs.isEmpty()) {
-                    logger.debug("[Hightouch] No runs found yet for syncId={} runId={} — retrying",
-                        syncId, runId);
+                    logger.debug(
+                        "[Hightouch] No runs found yet for syncId={} runId={} — retrying",
+                        syncId, runId
+                    );
                     return null;
                 }
 
@@ -192,13 +197,17 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                     .orElse(null);
 
                 if (runDetails == null) {
-                    logger.debug("[Hightouch] runId={} not yet visible in /runs response ({} total runs) — retrying",
-                        runId, runs.size());
+                    logger.debug(
+                        "[Hightouch] runId={} not yet visible in /runs response ({} total runs) — retrying",
+                        runId, runs.size()
+                    );
                     return null;
                 }
 
-                logger.info("[Hightouch] syncId={} runId={} current status='{}'",
-                    syncId, runId, runDetails.getStatus());
+                logger.info(
+                    "[Hightouch] syncId={} runId={} current status='{}'",
+                    syncId, runId, runDetails.getStatus()
+                );
 
                 sendLog(logger, syncDetails.getBody(), runDetails);
 
@@ -224,15 +233,20 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 logger.warn("Run {} has null finishedAt - duration set to N/A", finalJobStatus.getId());
             }
 
-            throw new RuntimeException("Failed run with status '" + finalJobStatus.getStatus() +
-                "' after " + durationHumanized + ": " + finalJobStatus.getStatus()
+            throw new RuntimeException(
+                "Failed run with status '" + finalJobStatus.getStatus() +
+                    "' after " + durationHumanized + ": " + finalJobStatus.getStatus()
             );
         }
 
-        if (finalJobStatus.getStatus() == RunStatus.COMPLETED_WITH_ERRORS
-            || finalJobStatus.getStatus() == RunStatus.WARNING) {
-            logger.warn("Run completed with errors (runId={}): {} failed rows", runId,
-                finalJobStatus.getFailedRows());
+        if (
+            finalJobStatus.getStatus() == RunStatus.COMPLETED_WITH_ERRORS
+                || finalJobStatus.getStatus() == RunStatus.WARNING
+        ) {
+            logger.warn(
+                "Run completed with errors (runId={}): {} failed rows", runId,
+                finalJobStatus.getFailedRows()
+            );
         }
 
         runContext.metric(Counter.of("completion.ratio", finalJobStatus.getCompletionRatio()));

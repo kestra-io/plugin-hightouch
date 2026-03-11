@@ -1,26 +1,27 @@
 package io.kestra.plugin.hightouch;
 
+import java.io.IOException;
+import java.net.URI;
+
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
-import io.kestra.core.models.property.Property;
-import io.kestra.core.models.tasks.Task;
-import io.kestra.core.runners.RunContext;
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.http.HttpResponse;
 import io.kestra.core.http.client.HttpClient;
 import io.kestra.core.http.client.HttpClientException;
 import io.kestra.core.http.client.configurations.HttpConfiguration;
+import io.kestra.core.models.property.Property;
+import io.kestra.core.models.tasks.Task;
+import io.kestra.core.runners.RunContext;
+
 import io.micronaut.http.HttpMethod;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-
-import java.io.IOException;
-import java.net.URI;
-
-import jakarta.validation.constraints.NotNull;
 
 @SuperBuilder
 @ToString
@@ -42,12 +43,12 @@ public abstract class AbstractHightouchConnection extends Task {
     protected HttpConfiguration options;
 
     /**
-     * @param method        The HTTP method (GET, POST, PUT, DELETE).
-     * @param path          The API endpoint path.
-     * @param body          The request body (nullable).
-     * @param responseType  The expected response type.
-     * @param runContext    The Kestra run context.
-     * @param <RES>         The response class.
+     * @param method The HTTP method (GET, POST, PUT, DELETE).
+     * @param path The API endpoint path.
+     * @param body The request body (nullable).
+     * @param responseType The expected response type.
+     * @param runContext The Kestra run context.
+     * @param <RES> The response class.
      * @return HttpResponse of type RES.
      */
     protected <RES> HttpResponse<RES> request(String method, String path, Object body, Class<RES> responseType, RunContext runContext)
@@ -73,7 +74,7 @@ public abstract class AbstractHightouchConnection extends Task {
             HttpResponse<String> response = client.request(requestBuilder.build(), String.class);
 
             RES parsedResponse = MAPPER.readValue(response.getBody(), responseType);
-            return HttpResponse.<RES>builder()
+            return HttpResponse.<RES> builder()
                 .request(requestBuilder.build())
                 .body(parsedResponse)
                 .headers(response.getHeaders())

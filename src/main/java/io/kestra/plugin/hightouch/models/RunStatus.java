@@ -1,11 +1,11 @@
 package io.kestra.plugin.hightouch.models;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum RunStatus {
     PROCESSING("processing"),
@@ -33,7 +33,8 @@ public enum RunStatus {
 
     @JsonCreator
     public static RunStatus fromValue(String text) {
-        if (text == null) return null;
+        if (text == null)
+            return null;
 
         String n = normalize(text);
 
@@ -52,7 +53,8 @@ public enum RunStatus {
     }
 
     private static String normalize(String s) {
-        if (s == null) return "";
+        if (s == null)
+            return "";
         return s.trim()
             .toLowerCase()
             .replace('-', '_')

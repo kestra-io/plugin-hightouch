@@ -1,6 +1,6 @@
 @PluginSubGroup(
     description = "This sub-group of plugins contains tasks for using Hightouch.\n" +
-    "Hightouch is a reverse ETL product which allows you to easily activate your data.",
+        "Hightouch is a reverse ETL product which allows you to easily activate your data.",
     categories = {
         PluginSubGroup.PluginCategory.DATA,
         PluginSubGroup.PluginCategory.BUSINESS
