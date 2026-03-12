@@ -276,7 +276,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         )
         private final Long runId;
 
-        @Schema(title = "Run metadata returned by Hightouch")
+        @Schema(title = "Sync run metadata")
         private final RunDetails metadata;
     }
 }
