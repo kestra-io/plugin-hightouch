@@ -42,6 +42,10 @@ public abstract class AbstractHightouchConnection extends Task {
     @Schema(title = "The HTTP client configuration")
     protected HttpConfiguration options;
 
+    protected String baseUrl() {
+        return BASE_URL;
+    }
+
     /**
      * @param method The HTTP method (GET, POST, PUT, DELETE).
      * @param path The API endpoint path.
@@ -54,7 +58,7 @@ public abstract class AbstractHightouchConnection extends Task {
     protected <RES> HttpResponse<RES> request(String method, String path, Object body, Class<RES> responseType, RunContext runContext)
         throws HttpClientException, IllegalVariableEvaluationException {
 
-        URI fullUri = URI.create(BASE_URL + path);
+        URI fullUri = URI.create(baseUrl() + path);
 
         HttpRequest.HttpRequestBuilder requestBuilder = HttpRequest.builder()
             .uri(fullUri)
