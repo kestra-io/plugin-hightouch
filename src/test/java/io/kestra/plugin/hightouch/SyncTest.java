@@ -1,7 +1,6 @@
 package io.kestra.plugin.hightouch;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import com.google.common.collect.ImmutableMap;
 import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
