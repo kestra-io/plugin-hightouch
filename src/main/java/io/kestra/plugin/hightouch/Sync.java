@@ -259,6 +259,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
 
         return Output.builder()
             .runId(runId)
+            .metadata(finalJobStatus)
             .build();
     }
 
@@ -274,5 +275,8 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
             description = "Identifier returned by Hightouch for the triggered run."
         )
         private final Long runId;
+
+        @Schema(title = "Sync run metadata")
+        private final RunDetails metadata;
     }
 }
