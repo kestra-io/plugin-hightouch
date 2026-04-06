@@ -25,6 +25,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import static io.kestra.core.utils.Rethrow.throwSupplier;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -107,6 +108,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         description = "Required numeric ID of the sync to trigger."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<Long> syncId;
 
     @Schema(
@@ -114,6 +116,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         description = "Default false. Sends fullResync=true so Hightouch reloads all rows instead of incremental changes."
     )
     @Builder.Default
+    @PluginProperty(group = "advanced")
     private Property<Boolean> fullResynchronization = Property.ofValue(false);
 
     @Schema(
@@ -121,6 +124,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         description = "Default true. When false the task returns the runId immediately without polling status, metrics, or logs."
     )
     @Builder.Default
+    @PluginProperty(group = "execution")
     private Property<Boolean> wait = Property.ofValue(true);
 
     @Schema(
@@ -128,6 +132,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
         description = "Defaults to 5 minutes. Polls run status every second until a terminal state or this limit is reached."
     )
     @Builder.Default
+    @PluginProperty(group = "execution")
     private Property<Duration> maxDuration = Property.ofValue(Duration.ofMinutes(5));
 
     @Builder.Default
