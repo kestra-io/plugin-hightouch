@@ -38,7 +38,7 @@ public abstract class AbstractHightouchConnection extends Task {
 
     @Schema(title = "API Bearer token")
     @NotNull
-    @PluginProperty(group = "main")
+    @PluginProperty(secret = true, group = "main")
     private Property<String> token;
 
     @Schema(title = "The HTTP client configuration")
