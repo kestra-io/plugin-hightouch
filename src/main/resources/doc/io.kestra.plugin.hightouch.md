@@ -4,7 +4,7 @@ Trigger Hightouch sync runs from Kestra flows and optionally wait for completion
 
 ## Authentication
 
-Set `token` to your Hightouch API bearer token (required). Store it in a [secret](https://kestra.io/docs/concepts/secret) and apply it globally with [plugin defaults](https://kestra.io/docs/workflow-components/plugin-defaults).
+Set `token` to your Hightouch API bearer token (required). Store it in a [secret](https://kestra.io/docs/concepts/secret) and set it on each task.
 
 ## Tasks
 
