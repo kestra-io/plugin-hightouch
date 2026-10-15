@@ -240,7 +240,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
 
             throw new RuntimeException(
                 "Failed run with status '" + finalJobStatus.getStatus() +
-                    "' after " + durationHumanized + ": " + finalJobStatus.getStatus()
+                    "' after " + durationHumanized + ": " + finalJobStatus.getError()
             );
         }
 
