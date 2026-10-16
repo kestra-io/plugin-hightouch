@@ -99,6 +99,67 @@ class SyncTest {
             """)));
     }
 
+    @Test
+    void shouldThrowWhenRunFailsWithHightouchError() {
+        RunContext runContext = runContextFactory.of();
+
+        stubFor(get(urlEqualTo("/api/v1/syncs/0"))
+            .willReturn(okJson("""
+                {
+                  "id": 0,
+                  "slug": "test-sync"
+                }
+            """)));
+
+        stubFor(post(urlEqualTo("/api/v1/syncs/0/trigger"))
+            .willReturn(okJson("""
+                {
+                  "id": 123
+                }
+            """)));
+
+        stubFor(get(urlPathEqualTo("/api/v1/syncs/0/runs"))
+            .willReturn(okJson("""
+                {
+                  "data": [
+                    {
+                      "id": 123,
+                      "status": "FAILED",
+                      "completionRatio": 0,
+                      "error": "Source connection timed out after 30s",
+                      "successfulRows": {
+                        "addedCount": 0,
+                        "removedCount": 0,
+                        "changedCount": 0
+                      },
+                      "failedRows": {
+                        "addedCount": 0,
+                        "removedCount": 0,
+                        "changedCount": 0
+                      }
+                    }
+                  ]
+                }
+            """)));
+
+        TestSync task = TestSync.builder()
+            .base("http://localhost:28181")
+            .token(Property.ofValue("token"))
+            .syncId(Property.ofValue(0L))
+            .wait(Property.ofValue(true))
+            .build();
+
+        RuntimeException exception = org.junit.jupiter.api.Assertions.assertThrows(
+            RuntimeException.class,
+            () -> task.run(runContext)
+        );
+
+        org.junit.jupiter.api.Assertions.assertTrue(
+            exception.getMessage().contains("Source connection timed out after 30s"),
+            "Exception message should include the Hightouch error, but was: " + exception.getMessage()
+        );
+    }
+
     @SuperBuilder
     static class TestSync extends Sync {
         private final String base;
