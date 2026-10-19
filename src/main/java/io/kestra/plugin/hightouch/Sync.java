@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.slf4j.Logger;
 
@@ -102,6 +103,7 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
     );
 
     private static final Duration STATUS_REFRESH_RATE = Duration.ofSeconds(1);
+    private static final int MAX_ERROR_LENGTH = 1000;
 
     @Schema(
         title = "Hightouch sync ID",
@@ -238,9 +240,13 @@ public class Sync extends AbstractHightouchConnection implements RunnableTask<Sy
                 logger.warn("Run {} has null finishedAt - duration set to N/A", finalJobStatus.getId());
             }
 
+            var error = StringUtils.isBlank(finalJobStatus.getError())
+                ? "no error details returned by Hightouch"
+                : StringUtils.abbreviate(finalJobStatus.getError(), MAX_ERROR_LENGTH);
+
             throw new RuntimeException(
                 "Failed run with status '" + finalJobStatus.getStatus() +
-                    "' after " + durationHumanized + ": " + finalJobStatus.getError()
+                    "' after " + durationHumanized + ": " + error
             );
         }
 

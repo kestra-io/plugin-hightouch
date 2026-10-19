@@ -12,7 +12,10 @@ import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @KestraTest
 @WireMockTest(httpPort = 28181)
@@ -101,22 +104,40 @@ class SyncTest {
 
     @Test
     void shouldThrowWhenRunFailsWithHightouchError() {
-        RunContext runContext = runContextFactory.of();
+        var runContext = runContextFactory.of();
 
-        stubFor(get(urlEqualTo("/api/v1/syncs/0"))
-            .willReturn(okJson("""
-                {
-                  "id": 0,
-                  "slug": "test-sync"
-                }
-            """)));
+        stubFailedRun("""
+            "error": "Source connection timed out after 30s",
+            """);
 
-        stubFor(post(urlEqualTo("/api/v1/syncs/0/trigger"))
-            .willReturn(okJson("""
-                {
-                  "id": 123
-                }
-            """)));
+        var exception = assertThrows(RuntimeException.class, () -> failingTask().run(runContext));
+
+        assertThat(exception.getMessage(), containsString(": Source connection timed out after 30s"));
+    }
+
+    @Test
+    void shouldThrowWithFallbackWhenRunFailsWithoutHightouchError() {
+        var runContext = runContextFactory.of();
+
+        stubFailedRun("");
+
+        var exception = assertThrows(RuntimeException.class, () -> failingTask().run(runContext));
+
+        assertThat(exception.getMessage(), containsString(": no error details returned by Hightouch"));
+        assertThat(exception.getMessage(), not(containsString("null")));
+    }
+
+    private TestSync failingTask() {
+        return TestSync.builder()
+            .base("http://localhost:28181")
+            .token(Property.ofValue("token"))
+            .syncId(Property.ofValue(0L))
+            .wait(Property.ofValue(true))
+            .build();
+    }
+
+    private void stubFailedRun(String errorField) {
+        stubHightouchApi();
 
         stubFor(get(urlPathEqualTo("/api/v1/syncs/0/runs"))
             .willReturn(okJson("""
@@ -126,7 +147,7 @@ class SyncTest {
                       "id": 123,
                       "status": "FAILED",
                       "completionRatio": 0,
-                      "error": "Source connection timed out after 30s",
+                      %s
                       "successfulRows": {
                         "addedCount": 0,
                         "removedCount": 0,
@@ -140,24 +161,7 @@ class SyncTest {
                     }
                   ]
                 }
-            """)));
-
-        TestSync task = TestSync.builder()
-            .base("http://localhost:28181")
-            .token(Property.ofValue("token"))
-            .syncId(Property.ofValue(0L))
-            .wait(Property.ofValue(true))
-            .build();
-
-        RuntimeException exception = org.junit.jupiter.api.Assertions.assertThrows(
-            RuntimeException.class,
-            () -> task.run(runContext)
-        );
-
-        org.junit.jupiter.api.Assertions.assertTrue(
-            exception.getMessage().contains("Source connection timed out after 30s"),
-            "Exception message should include the Hightouch error, but was: " + exception.getMessage()
-        );
+            """.formatted(errorField))));
     }
 
     @SuperBuilder
